@@ -26,7 +26,7 @@ Compatible: QGIS 3.x
 
 import math
 
-from qgis.PyQt.QtCore import Qt, QDate, QSizeF, QEvent
+from qgis.PyQt.QtCore import Qt, QDate, QSizeF, QEvent, QVariant
 from qgis.PyQt.QtGui import QColor, QFont, QIcon
 from qgis.PyQt.QtWidgets import (
     QAction,
@@ -70,7 +70,6 @@ from qgis.core import (
 
 from qgis.gui import QgsMapTool
 
-from PyQt5.QtCore import QVariant
 
 
 LAYER_NAME_SETTINGS_KEY = "interactive_ruler/layer_name"
@@ -259,7 +258,7 @@ def is_ruler_layer(layer):
         return False
 
     if QgsWkbTypes.geometryType(layer.wkbType()) != \
-            QgsWkbTypes.LineGeometry:
+            QgsWkbTypes.GeometryType.LineGeometry:
         return False
 
     return layer.fields().lookupField("Length") != -1
@@ -309,10 +308,10 @@ def apply_ruler_style(layer, theme, font_size, line_width):
 
 
     triangle = QgsFilledMarkerSymbolLayer()
-    triangle.setShape(QgsFilledMarkerSymbolLayer.Triangle)
+    triangle.setShape(QgsFilledMarkerSymbolLayer.Shape.Triangle)
     triangle.setAngle(90.0)
     triangle.setSize(marker_size)
-    triangle.setSizeUnit(QgsUnitTypes.RenderMillimeters)
+    triangle.setSizeUnit(QgsUnitTypes.RenderUnit.RenderMillimeters)
     triangle.setColor(line_color)
     triangle.setFillColor(line_color)
     triangle.setStrokeColor(line_color)
@@ -323,9 +322,9 @@ def apply_ruler_style(layer, theme, font_size, line_width):
     if hasattr(marker_line, "setPlacements"):
         marker_line.setPlacements(Qgis.MarkerLinePlacement.Interval)
     else:
-        marker_line.setPlacement(QgsMarkerLineSymbolLayer.Interval)
+        marker_line.setPlacement(QgsMarkerLineSymbolLayer.Placement.Interval)
     marker_line.setInterval(marker_interval)
-    marker_line.setIntervalUnit(QgsUnitTypes.RenderMillimeters)
+    marker_line.setIntervalUnit(QgsUnitTypes.RenderUnit.RenderMillimeters)
     if hasattr(marker_line, "setRotateSymbols"):
         marker_line.setRotateSymbols(True)
     else:
@@ -346,13 +345,13 @@ def apply_ruler_style(layer, theme, font_size, line_width):
     settings.isExpression = False
 
 
-    settings.placement = QgsPalLayerSettings.Horizontal
+    settings.placement = QgsPalLayerSettings.Placement.Horizontal
     settings.placementFlags = (
-        QgsPalLayerSettings.AboveLine |
-        QgsPalLayerSettings.MapOrientation
+        QgsPalLayerSettings.LinePlacementFlags.AboveLine |
+        QgsPalLayerSettings.LinePlacementFlags.MapOrientation
     )
     settings.dist = 0.0
-    settings.distUnits = QgsUnitTypes.RenderMillimeters
+    settings.distUnits = QgsUnitTypes.RenderUnit.RenderMillimeters
     settings.priority = 5
 
     # -----------------------------
@@ -366,7 +365,7 @@ def apply_ruler_style(layer, theme, font_size, line_width):
     font.setBold(True)
     text_format.setFont(font)
     text_format.setSize(font_size)
-    text_format.setSizeUnit(QgsUnitTypes.RenderPoints)
+    text_format.setSizeUnit(QgsUnitTypes.RenderUnit.RenderPoints)
     text_format.setColor(LABEL_TEXT_COLOR)
 
     # -----------------------------
@@ -374,21 +373,21 @@ def apply_ruler_style(layer, theme, font_size, line_width):
     # -----------------------------
     background = QgsTextBackgroundSettings()
     background.setEnabled(True)
-    background.setType(QgsTextBackgroundSettings.ShapeRectangle)
+    background.setType(QgsTextBackgroundSettings.ShapeType.ShapeRectangle)
     background.setFillColor(LABEL_BACKGROUND_COLOR)
     background.setStrokeColor(QColor(128, 128, 128))
     background.setStrokeWidth(0.0)
-    background.setStrokeWidthUnit(QgsUnitTypes.RenderPoints)
-    background.setSizeType(QgsTextBackgroundSettings.SizeBuffer)
+    background.setStrokeWidthUnit(QgsUnitTypes.RenderUnit.RenderPoints)
+    background.setSizeType(QgsTextBackgroundSettings.SizeType.SizeBuffer)
     background.setSize(QSizeF(0.0, 0.0))
     text_format.setBackground(background)
 
     shadow = QgsTextShadowSettings()
     shadow.setEnabled(True)
     shadow.setBlurRadius(1.5)
-    shadow.setBlurRadiusUnit(QgsUnitTypes.RenderMillimeters)
+    shadow.setBlurRadiusUnit(QgsUnitTypes.RenderUnit.RenderMillimeters)
     shadow.setOffsetDistance(1.0)
-    shadow.setOffsetUnit(QgsUnitTypes.RenderMillimeters)
+    shadow.setOffsetUnit(QgsUnitTypes.RenderUnit.RenderMillimeters)
     shadow.setOffsetAngle(135)
     shadow.setColor(QColor(0, 0, 0))
     shadow.setOpacity(0.7)
@@ -418,8 +417,10 @@ class RulerTooltip(QLabel):
         self.canvas = canvas
 
         self.setObjectName("rulerTooltip")
-        self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
-        self.setTextFormat(Qt.PlainText)
+        self.setAttribute(
+            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
+        )
+        self.setTextFormat(Qt.TextFormat.PlainText)
         self.setStyleSheet(
             "QLabel#rulerTooltip {"
             "background-color: #FFFFE1;"
@@ -543,7 +544,11 @@ class ThemePopup(QDialog):
 
     def keyPressEvent(self, event):
 
-        if event.key() in (Qt.Key_Return, Qt.Key_Enter, Qt.Key_Escape):
+        if event.key() in (
+                Qt.Key.Key_Return,
+                Qt.Key.Key_Enter,
+                Qt.Key.Key_Escape,
+        ):
             self.accept()
             return
 
@@ -629,7 +634,7 @@ class RulerDialog(QDialog):
         font_row = QHBoxLayout()
         font_row.addWidget(QLabel("Label font size:"))
 
-        self.font_slider = QSlider(Qt.Horizontal)
+        self.font_slider = QSlider(Qt.Orientation.Horizontal)
         self.font_slider.setObjectName("fontSlider")
         self.font_slider.setToolTip(
             "Text size of the length labels, in points"
@@ -648,7 +653,7 @@ class RulerDialog(QDialog):
         width_row = QHBoxLayout()
         width_row.addWidget(QLabel("Line width:"))
 
-        self.width_slider = QSlider(Qt.Horizontal)
+        self.width_slider = QSlider(Qt.Orientation.Horizontal)
         self.width_slider.setObjectName("widthSlider")
         self.width_slider.setToolTip(
             "Thickness of the arrow line, in millimetres"
@@ -842,7 +847,7 @@ class InteractiveRulerTool(QgsMapTool):
 
         self.rubberBand = QgsRubberBand(
             self.canvas,
-            QgsWkbTypes.LineGeometry
+            QgsWkbTypes.GeometryType.LineGeometry
         )
 
         self.update_style()
@@ -924,7 +929,7 @@ class InteractiveRulerTool(QgsMapTool):
             self.warn_missing_crs()
 
     def eventFilter(self, obj, event):
-        if event.type() == QEvent.Leave:
+        if event.type() == QEvent.Type.Leave:
             self.hide_tooltip()
 
         return super().eventFilter(obj, event)
@@ -1041,7 +1046,7 @@ class InteractiveRulerTool(QgsMapTool):
         pr = layer.dataProvider()
 
         pr.addAttributes([
-            QgsField("Length", QVariant.String)
+            QgsField("Length", QVariant.Type.String)
         ])
 
         layer.updateFields()
@@ -1085,7 +1090,7 @@ class InteractiveRulerTool(QgsMapTool):
         last_theme, font_size, line_width = current_settings()
 
         popup = ThemePopup(last_theme, self.iface.mainWindow())
-        popup.exec_()
+        popup.exec()
 
         theme = popup.theme()
 
@@ -1166,7 +1171,7 @@ class InteractiveRulerTool(QgsMapTool):
 
     def reset_rubber_band(self):
         if self.rubberBand:
-            self.rubberBand.reset(QgsWkbTypes.LineGeometry)
+            self.rubberBand.reset(QgsWkbTypes.GeometryType.LineGeometry)
 
     def draw_rubber_band(self, points):
         self.reset_rubber_band()
@@ -1347,7 +1352,7 @@ class InteractiveRulerTool(QgsMapTool):
             self.warn_missing_crs()
             return
 
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
 
             if self.mode == "path":
                 self.add_path_point(
@@ -1362,7 +1367,7 @@ class InteractiveRulerTool(QgsMapTool):
 
             self.reset_rubber_band()
 
-        elif event.button() == Qt.RightButton:
+        elif event.button() == Qt.MouseButton.RightButton:
 
             if self.mode == "path" and len(self.path_points) >= 2:
                 self.finish_path()
@@ -1428,7 +1433,7 @@ class InteractiveRulerTool(QgsMapTool):
         if self.mode == "path":
             return
 
-        if event.button() != Qt.LeftButton:
+        if event.button() != Qt.MouseButton.LeftButton:
             return
 
         self.hide_tooltip()
@@ -1458,7 +1463,7 @@ class InteractiveRulerTool(QgsMapTool):
         super().canvasDoubleClickEvent(event)
 
     def keyPressEvent(self, event):
-        if event.key() == Qt.Key_Escape:
+        if event.key() == Qt.Key.Key_Escape:
             self.clear_measurement()
             return
 
@@ -1593,7 +1598,7 @@ class InteractiveRulerPlugin:
 
     def open_dialog(self):
         dialog = self.create_dialog()
-        result = dialog.exec_()
+        result = dialog.exec()
 
         self.layer_name = dialog.layer_name()
         self.save_layer_name()
@@ -1603,7 +1608,7 @@ class InteractiveRulerPlugin:
             self.tool.update_style()
             self.tool.layer_name = self.layer_name
 
-        if result != QDialog.Accepted:
+        if result != QDialog.DialogCode.Accepted:
             return
 
         mode = dialog.selected_mode()
