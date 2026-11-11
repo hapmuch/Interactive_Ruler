@@ -115,4 +115,4 @@ See `metadata.txt` for the full changelog.
 
 ## Author
 
-timmi
+hafiz m.
