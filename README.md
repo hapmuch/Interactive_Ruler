@@ -33,9 +33,10 @@ layer with direction arrows and a length label.
 
 ## Installation
 
-This plugin is not published in the official QGIS plugin repository.
+Install it from the QGIS **Plugin Manager** (*Plugins > Manage and Install
+Plugins*), or manually from this repository:
 
-1. Download or clone this repository.
+1. Download the plugin ZIP, or clone this repository.
 2. Copy the plugin folder into your QGIS profile:
 
    ```text
@@ -98,12 +99,16 @@ the settings reference and troubleshooting.
 | `metadata.txt` | Plugin metadata and changelog |
 | `icon.svg` | Toolbar icon |
 | `icon.png` | Raster version of the icon |
+| `LICENSE` | GNU General Public License v2.0 |
 | `Interactive-Ruler-User-Manual.pdf` | User manual with table of contents |
 
 ## Version
 
-Current version: **1.17**
+Current version: **1.18**
 
+- **1.18** – Qt6 compatibility fixes: scoped enum names, `exec()` instead
+  of `exec_()`, and `QVariant` imported from `qgis.PyQt`. No behaviour
+  change.
 - **1.17** – Added the Red theme (`#e31a1c`); the drag preview is now
   always red so it stays visible with the Light theme.
 - **1.16** – Warns and refuses to measure when the project has no CRS.
