@@ -78,13 +78,12 @@ THEME_SETTINGS_KEY = "interactive_ruler/theme"
 FONT_SIZE_SETTINGS_KEY = "interactive_ruler/label_font_size"
 LINE_WIDTH_SETTINGS_KEY = "interactive_ruler/line_width"
 
-# Name used when the layer-name box is empty.
 DEFAULT_LAYER_NAME = "Ruler"
 
-# Custom property that marks layers managed by this plugin.
+
 RULER_LAYER_PROPERTY = "interactive_ruler_layer"
 
-# Per-layer style stored as custom properties (saved with the project).
+
 LAYER_THEME_KEY = "interactive_ruler/theme"
 LAYER_FONT_KEY = "interactive_ruler/label_font_size"
 LAYER_WIDTH_KEY = "interactive_ruler/line_width"
@@ -98,22 +97,17 @@ MAX_FONT_SIZE = 24
 MIN_LINE_WIDTH = 0.5
 MAX_LINE_WIDTH = 6.0
 
-# Offset of the live distance balloon from the mouse cursor, in pixels.
+
 TOOLTIP_OFFSET_X = 14
 TOOLTIP_OFFSET_Y = 18
 
-# Icon shown on the toolbar button and in the plugin menu.
+
 PLUGIN_ICON = "icon.svg"
 
-# The live rubber band is always red, independent of the chosen line
-# theme, so the preview stays visible on light and dark basemaps alike.
+
 RUBBER_BAND_COLOR = QColor("red")
 
-# Line colours per theme. "light" draws white lines and arrows so they
-# stand out on dark basemaps such as Google Satellite. "red" uses the
-# red from ColorBrewer's Set1 palette. The yellow label background with
-# black text stays readable on every basemap, so it is shared by all
-# themes.
+
 THEMES = {
     "dark": {
         "line_color": QColor(35, 35, 35),
@@ -260,8 +254,6 @@ def is_ruler_layer(layer):
     if layer.customProperty(RULER_LAYER_PROPERTY, False):
         return True
 
-    # Layers made by older plugin versions carry no marker property.
-    # Recognise them by provider, geometry and the Length field.
     provider = layer.dataProvider()
     if provider is None or provider.name() != "memory":
         return False
@@ -301,7 +293,7 @@ def apply_ruler_style(layer, theme, font_size, line_width):
     line_color = theme_def["line_color"]
 
     marker_size = max(MIN_LINE_WIDTH, min(MAX_LINE_WIDTH, line_width))
-    # Keep the original arrow spacing (2 mm arrows / 3 mm interval).
+
     marker_interval = max(1.0, marker_size * 1.5)
 
     # -----------------------------
@@ -315,7 +307,7 @@ def apply_ruler_style(layer, theme, font_size, line_width):
     while marker_symbol.symbolLayerCount():
         marker_symbol.deleteSymbolLayer(0)
 
-    # Filled triangle, turned so it points along the drawing direction.
+
     triangle = QgsFilledMarkerSymbolLayer()
     triangle.setShape(QgsFilledMarkerSymbolLayer.Triangle)
     triangle.setAngle(90.0)
@@ -353,7 +345,7 @@ def apply_ruler_style(layer, theme, font_size, line_width):
     settings.fieldName = "Length"
     settings.isExpression = False
 
-    # Horizontal label in the middle of the line, like the reference.
+
     settings.placement = QgsPalLayerSettings.Horizontal
     settings.placementFlags = (
         QgsPalLayerSettings.AboveLine |
@@ -464,7 +456,6 @@ class RulerTooltip(QLabel):
         max_x = max(2, parent.width() - width - 2)
         max_y = max(2, parent.height() - height - 2)
 
-        # Flip to the other side when the balloon would leave the canvas.
         if x > max_x:
             x = anchor.x() - width - TOOLTIP_OFFSET_X
         if y > max_y:
@@ -551,8 +542,7 @@ class ThemePopup(QDialog):
         return "dark"
 
     def keyPressEvent(self, event):
-        # Enter and Escape both accept the pre-selected theme: the
-        # ruler is already drawn, so the popup never blocks it.
+
         if event.key() in (Qt.Key_Return, Qt.Key_Enter, Qt.Key_Escape):
             self.accept()
             return
@@ -590,9 +580,7 @@ class RulerDialog(QDialog):
 
         self._selected_mode = None
 
-        # What the sliders restyle, from the Layers panel selection
-        # (the dialog is modal, so the selection cannot change while
-        # it is open).
+
         self.style_layers = self.selected_style_layers()
 
         if self.style_layers:
@@ -665,7 +653,7 @@ class RulerDialog(QDialog):
         self.width_slider.setToolTip(
             "Thickness of the arrow line, in millimetres"
         )
-        # Whole millimetres are too coarse; work in tenths of a mm.
+
         self.width_slider.setRange(
             int(MIN_LINE_WIDTH * 10), int(MAX_LINE_WIDTH * 10)
         )
@@ -699,8 +687,7 @@ class RulerDialog(QDialog):
         # -------------------------
         # LAYER NAME
         # -------------------------
-        # Type or paste the name BEFORE measuring; every finished
-        # measurement is saved as its own layer with this name.
+
         name_row = QHBoxLayout()
         name_row.addWidget(QLabel("Layer name:"))
 
@@ -853,7 +840,6 @@ class InteractiveRulerTool(QgsMapTool):
 
         super().__init__(self.canvas)
 
-        # RUBBER BAND (always red, width from the line width)
         self.rubberBand = QgsRubberBand(
             self.canvas,
             QgsWkbTypes.LineGeometry
@@ -861,23 +847,18 @@ class InteractiveRulerTool(QgsMapTool):
 
         self.update_style()
 
-        # Straight mode state
+
         self.start_point = None
 
-        # Path mode state (map coordinates)
+
         self.path_points = []
 
-        # Keep the ruler in the same CRS as the map canvas. Using a fixed
-        # EPSG:4326 layer while the project is projected (e.g. EPSG:3857)
-        # stores invalid geometry and makes measureLine() return NaN.
         self.canvas_crs = self.canvas.mapSettings().destinationCrs()
 
         self.layer = None
         self.layer_id = None
 
-        # The distance area needs a valid source CRS even when the
-        # project has none. EPSG:4326 is only a safe placeholder: no
-        # measurement is made until a project CRS is set.
+
         self.distance = QgsDistanceArea()
         self.distance.setSourceCrs(
             self.canvas_crs if self.canvas_crs.isValid()
@@ -886,12 +867,11 @@ class InteractiveRulerTool(QgsMapTool):
         )
         self.distance.setEllipsoid('WGS84')
 
-        # The pending layer needs a CRS, so it is only created when the
-        # project has one. Without a CRS the tool warns instead.
+
         if self.canvas_crs_available():
             self.layer = self.create_layer()
 
-        # Floating live-distance balloon (created on activate()).
+
         self.tooltip = None
 
     # ---------------------------------------------------------
@@ -971,13 +951,12 @@ class InteractiveRulerTool(QgsMapTool):
 
     def azimuth_label(self, start_point, end_point):
         if hasattr(self.distance, "bearing"):
-            # QgsDistanceArea.bearing() returns the compass azimuth in
-            # radians, clockwise from north.
+
             azimuth = math.degrees(
                 self.distance.bearing(start_point, end_point)
             ) % 360.0
         else:
-            # Older QGIS versions: fall back to a planar azimuth.
+
             dx = end_point.x() - start_point.x()
             dy = end_point.y() - start_point.y()
             azimuth = math.degrees(math.atan2(dx, dy)) % 360.0
@@ -1043,8 +1022,7 @@ class InteractiveRulerTool(QgsMapTool):
         group = self.ensure_group()
 
         if name is None:
-            # Not named by the caller: use the name typed in the
-            # dialog, numbered so it is free (Ruler, Ruler 2, ...).
+
             name = unique_layer_name(self.layer_name)
 
         layer_crs = crs if crs is not None and crs.isValid() \
@@ -1057,7 +1035,7 @@ class InteractiveRulerTool(QgsMapTool):
             "memory"
         )
 
-        # Mark the layer so the style sliders can find it again later.
+
         layer.setCustomProperty(RULER_LAYER_PROPERTY, True)
 
         pr = layer.dataProvider()
@@ -1073,8 +1051,7 @@ class InteractiveRulerTool(QgsMapTool):
 
         self.apply_style(layer)
 
-        # Remember the id: the layer itself can be deleted from
-        # outside the plugin while the tool stays active.
+
         self.layer_id = layer.id()
 
         return layer
@@ -1129,7 +1106,7 @@ class InteractiveRulerTool(QgsMapTool):
         _theme, _font_size, line_width = current_settings()
 
         self.rubberBand.setColor(RUBBER_BAND_COLOR)
-        # Rough mm -> pixel mapping for the preview band only.
+
         self.rubberBand.setWidth(max(2, int(round(line_width))))
 
     # ---------------------------------------------------------
@@ -1240,9 +1217,7 @@ class InteractiveRulerTool(QgsMapTool):
             return
 
         if not self.layer_available():
-            # The pending layer was deleted outside the plugin while
-            # the tool stayed active; start a fresh one rather than
-            # touching the dead object.
+
             self.layer = self.create_layer()
             self.distance.setSourceCrs(
                 self.layer.crs(),
@@ -1252,11 +1227,7 @@ class InteractiveRulerTool(QgsMapTool):
 
         if self.layer.featureCount() > 0 or \
                 not self.pending_layer_in_name_group():
-            # Every measurement gets its own layer, so each saved
-            # line carries the name from the dialog and can be
-            # handled on its own in the Layers panel. A pending
-            # layer whose group no longer matches (name changed in
-            # the dialog) is replaced the same way.
+
             current_crs = self.layer.crs()
 
             if self.layer.featureCount() == 0:
@@ -1269,8 +1240,6 @@ class InteractiveRulerTool(QgsMapTool):
             )
             self.distance.setEllipsoid('WGS84')
 
-        # Name the finished layer after its result, so the group
-        # reads like a list of results: SITE A > SITE A 1.82 km.
         self.layer.setName(unique_layer_name(
             "%s %s" % (self.layer_name, self.format_length(dist_m))
         ))
@@ -1289,9 +1258,6 @@ class InteractiveRulerTool(QgsMapTool):
 
         self.layer.setLabelsEnabled(True)
 
-        # Every finished measurement asks for its theme; the last
-        # choice is pre-selected next time. Existing layers are never
-        # recoloured - redraw a line to change its colour.
         self.ask_measurement_theme(self.layer)
 
         self.layer.triggerRepaint()
@@ -1314,9 +1280,7 @@ class InteractiveRulerTool(QgsMapTool):
             self.warn_missing_crs()
             return
 
-        # If the project CRS changed in the middle of a path, start over
-        # rather than mixing coordinates from two different CRSs. The
-        # same applies when the pending layer disappeared underneath us.
+
         canvas_crs = self.canvas.mapSettings().destinationCrs()
         if self.path_points and (
                 not self.layer_available()
@@ -1395,7 +1359,7 @@ class InteractiveRulerTool(QgsMapTool):
 
             self.start_point = self.toMapCoordinates(event.pos())
 
-            # clear any stale rubber band from a previous drag
+
             self.reset_rubber_band()
 
         elif event.button() == Qt.RightButton:
@@ -1433,13 +1397,13 @@ class InteractiveRulerTool(QgsMapTool):
         start_layer = self.to_layer_point(self.start_point)
         end_layer = self.to_layer_point(end_point)
 
-        # RUBBER BAND
+
         self.draw_rubber_band([self.start_point, end_point])
 
-        # DISTANCE (measured in the ruler layer CRS)
+
         dist_m = self.distance.measureLine(start_layer, end_layer)
 
-        # LIVE DISPLAY NEXT TO THE CURSOR
+
         if dist_m > 0:
             text = "%s\n%s" % (
                 self.azimuth_label(start_layer, end_layer),
@@ -1509,7 +1473,7 @@ class InteractiveRulerTool(QgsMapTool):
             self.tooltip.deleteLater()
             self.tooltip = None
 
-        # Leave nothing behind when no measurement was finished.
+
         self.remove_empty_scratch_layer()
 
         super().deactivate()
@@ -1536,7 +1500,7 @@ class InteractiveRulerTool(QgsMapTool):
 
         project = QgsProject.instance()
 
-        # A layer that holds a finished measurement stays.
+
         layer = project.mapLayer(layer_id)
         if layer is not None:
             try:
@@ -1557,17 +1521,14 @@ class InteractiveRulerTool(QgsMapTool):
 
         project.removeMapLayer(layer_id)
 
-        # When the layer was deleted outside the plugin its tree node
-        # is already gone; look the (now empty) name group up by name
-        # so it does not linger.
+
         if parent is None:
             day_name = QDate.currentDate().toString("dd-MMM-yyyy")
             day = root.findGroup(day_name)
             if day is not None:
                 parent = day.findGroup(self.layer_name)
 
-        # Drop groups that only held the pending layer (the name
-        # group, then the day group when it is empty too).
+
         group = parent
         while group is not None and group is not root and \
                 isinstance(group, QgsLayerTreeGroup) and \
@@ -1637,9 +1598,7 @@ class InteractiveRulerPlugin:
         self.layer_name = dialog.layer_name()
         self.save_layer_name()
 
-        # Keep the preview of a still active ruler tool in sync with
-        # any font size / line width change made in the dialog, and
-        # let new measurements pick up the name just typed or pasted.
+
         if self.tool is not None:
             self.tool.update_style()
             self.tool.layer_name = self.layer_name
