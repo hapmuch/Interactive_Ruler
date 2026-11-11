@@ -1046,7 +1046,7 @@ class InteractiveRulerTool(QgsMapTool):
         pr = layer.dataProvider()
 
         pr.addAttributes([
-            QgsField("Length", QVariant.Type.String)
+            QgsField("Length", QVariant.String)
         ])
 
         layer.updateFields()
