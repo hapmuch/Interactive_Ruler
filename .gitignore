@@ -1,0 +1,11 @@
+# Python
+__pycache__/
+*.py[cod]
+
+# Local development scratch files
+*.ps1
+symbology-style.db
+
+# OS files
+.DS_Store
+Thumbs.db

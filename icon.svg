@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+Interactive Ruler plugin icon for QGIS.
+
+Shows the plugin's signature look: an arrow line of triangles running
+from a red start point to the cursor, with the yellow live-measurement
+balloon ("508 m") floating next to it.
+
+Scales cleanly from 16 px toolbar buttons to print-size documentation.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128"
+     viewBox="0 0 128 128" role="img" aria-label="Interactive Ruler">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBFCFD"/>
+      <stop offset="1" stop-color="#E4EAF1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- rounded tile background -->
+  <rect x="1" y="1" width="126" height="126" rx="27"
+        fill="url(#bg)" stroke="#C3CDD8" stroke-width="2"/>
+
+  <!-- red start point of the drag -->
+  <circle cx="28" cy="104" r="4" fill="#D81E27"/>
+
+  <!-- arrow line: repeated triangles pointing along the line -->
+  <g fill="#232323">
+    <polygon points="34.0,98.0 29.9,106.6 25.4,102.1"/>
+    <polygon points="39.7,92.3 35.6,101.0 31.0,96.4"/>
+    <polygon points="45.3,86.7 41.2,95.3 36.7,90.8"/>
+    <polygon points="51.0,81.0 46.9,89.6 42.4,85.1"/>
+    <polygon points="56.6,75.4 52.5,84.0 48.0,79.5"/>
+    <polygon points="62.3,69.7 58.2,78.3 53.7,73.8"/>
+    <polygon points="68.0,64.0 63.9,72.7 59.3,68.1"/>
+    <!-- final arrowhead at the cursor end -->
+    <polygon points="78.0,54.0 72.9,66.9 65.1,59.1"/>
+  </g>
+
+  <!-- live measurement balloon -->
+  <rect x="72" y="60" width="48" height="26" rx="5"
+        fill="#FFFF0D" stroke="#232323" stroke-width="1.5"/>
+  <text x="96" y="78" text-anchor="middle"
+        font-family="Open Sans, Segoe UI, Arial, sans-serif"
+        font-size="12" font-weight="700" fill="#000000">508 m</text>
+</svg>
