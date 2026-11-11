@@ -85,7 +85,6 @@ values to reset the plugin without affecting the rest of QGIS.
 ## Documentation
 
 - [User manual (PDF)](Interactive-Ruler-User-Manual.pdf)
-- [User manual (Word)](Interactive-Ruler-User-Manual.docx)
 
 The manual covers installation, the launcher dialog, measuring, styling,
 the settings reference and troubleshooting.
@@ -100,7 +99,6 @@ the settings reference and troubleshooting.
 | `icon.svg` | Toolbar icon |
 | `icon.png` | Raster version of the icon |
 | `Interactive-Ruler-User-Manual.pdf` | User manual with table of contents |
-| `Interactive-Ruler-User-Manual.docx` | Editable user manual |
 
 ## Version
 
