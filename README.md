@@ -14,7 +14,7 @@ layer with direction arrows and a length label.
 - **Live distance balloon** next to the cursor while dragging.
 - **Layer name box**: measurements are grouped under the name you type
   and every finished line or path becomes its own layer named after its
-  result, for example `SITE C 1.82 km`.
+  result, for example `SITE A 1.82 km`.
 - **Automatic units**: metres below 1 km, kilometres above.
 - **Arrow line style** with length labels, created in code so no style
   file is required.
@@ -104,8 +104,12 @@ the settings reference and troubleshooting.
 
 ## Version
 
-Current version: **1.18**
+Current version: **1.19**
 
+- **1.19** – Added a **Help button** (bottom-left of the launcher dialog)
+  that opens a small help window explaining the style sliders, the layer
+  name field, and how to restyle existing rulers after drawing by selecting
+  a group or individual layer in the Layers panel.
 - **1.18** – Qt6 compatibility fixes: scoped enum names, `exec()` instead
   of `exec_()`, and `QVariant` imported from `qgis.PyQt`. No behaviour
   change.
