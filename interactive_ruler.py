@@ -555,6 +555,90 @@ class ThemePopup(QDialog):
         super().keyPressEvent(event)
 
 
+class HelpDialog(QDialog):
+    """Small help window with usage notes for the Interactive Ruler."""
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+
+        self.setWindowTitle("Interactive Ruler – Help")
+        self.setModal(False)
+        self.setMinimumWidth(420)
+        self.setSizeGripEnabled(False)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(16, 14, 16, 12)
+        layout.setSpacing(10)
+
+        # --- Ruler style section ---
+        style_title = QLabel("<b>1. Ruler style sliders</b>")
+        style_title.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(style_title)
+
+        style_text = QLabel(
+            "With a Ruler layer or group selected in the Layers panel, "
+            "the sliders restyle those existing lines immediately. "
+            "With nothing selected, they set the default for new "
+            "measurements. The dark, light or red colours are asked in "
+            "a small window after every line or path is finished; "
+            "existing lines are never recoloured \u2013 redraw them to "
+            "change colours."
+        )
+        style_text.setWordWrap(True)
+        style_text_font = style_text.font()
+        style_text_font.setPointSize(9)
+        style_text.setFont(style_text_font)
+        layout.addWidget(style_text)
+
+        # --- Layer name section ---
+        name_title = QLabel("<b>2. Layer name</b>")
+        name_title.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(name_title)
+
+        name_text = QLabel(
+            "Every finished line or path becomes its own layer named "
+            "after its result (for example \u201cSITE A 1.82 km\u201d) "
+            "inside a group with this name under today\u2019s date.\n"
+            "If you leave the layer name blank, it will be named as "
+            "\u201cRuler\u201d."
+        )
+        name_text.setWordWrap(True)
+        name_text_font = name_text.font()
+        name_text_font.setPointSize(9)
+        name_text.setFont(name_text_font)
+        layout.addWidget(name_text)
+
+        # --- Restyling after drawing section ---
+        restyle_title = QLabel("<b>3. Adjusting style after drawing</b>")
+        restyle_title.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(restyle_title)
+
+        restyle_text = QLabel(
+            "You can change the label font size and line width at any "
+            "time after lines have been drawn:\n"
+            "\u2022  Select a whole group (e.g. \u201cRuler1\u201d) in the "
+            "Layers panel to restyle all rulers inside it at once.\n"
+            "\u2022  Select a single ruler layer (e.g. \u201cRuler1 "
+            "2.85 km\u201d) to restyle only that one line.\n"
+            "Then open the Interactive Ruler dialog and move the "
+            "Label font size or Line width slider \u2013 the change is "
+            "applied immediately to every selected layer."
+        )
+        restyle_text.setWordWrap(True)
+        restyle_text_font = restyle_text.font()
+        restyle_text_font.setPointSize(9)
+        restyle_text.setFont(restyle_text_font)
+        layout.addWidget(restyle_text)
+
+        # --- Close button ---
+        btn_row = QHBoxLayout()
+        btn_row.addStretch(1)
+        close_btn = QPushButton("Close")
+        close_btn.clicked.connect(self.accept)
+        btn_row.addWidget(close_btn)
+        layout.addLayout(btn_row)
+
+
 class RulerDialog(QDialog):
     """Launcher for the measuring modes, the style settings and the
     layer name.
@@ -672,21 +756,6 @@ class RulerDialog(QDialog):
 
         style_layout.addLayout(width_row)
 
-        style_hint = QLabel(
-            "With a Ruler layer or group selected in the Layers "
-            "panel, the sliders restyle those existing lines "
-            "immediately. With nothing selected, they set the "
-            "default for new measurements. The dark, light or red "
-            "colours are asked in a small window after every line "
-            "or path is finished; existing lines are never "
-            "recoloured - redraw them to change colours."
-        )
-        style_hint.setWordWrap(True)
-        style_hint_font = style_hint.font()
-        style_hint_font.setPointSize(9)
-        style_hint.setFont(style_hint_font)
-        style_layout.addWidget(style_hint)
-
         layout.addWidget(style_box)
 
         # -------------------------
@@ -708,20 +777,13 @@ class RulerDialog(QDialog):
 
         layout.addLayout(name_row)
 
-        hint = QLabel(
-            "Every finished line or path becomes its own layer named "
-            "after its result (for example \u201cSITE A 1.82 km\u201d) "
-            "inside a group with this name under today's date.\n"
-            "If you leave layer name blank, it will be named as "
-            "\u201cRuler\u201d"
-        )
-        hint.setWordWrap(True)
-        hint_font = hint.font()
-        hint_font.setPointSize(9)
-        hint.setFont(hint_font)
-        layout.addWidget(hint)
-
         close_row = QHBoxLayout()
+
+        self.help_button = QPushButton("Help")
+        self.help_button.setObjectName("helpButton")
+        self.help_button.clicked.connect(self.open_help)
+        close_row.addWidget(self.help_button)
+
         close_row.addStretch(1)
 
         self.close_button = QPushButton("Close")
@@ -743,6 +805,10 @@ class RulerDialog(QDialog):
     def select_mode(self, mode):
         self._selected_mode = mode
         self.accept()
+
+    def open_help(self):
+        dlg = HelpDialog(parent=self)
+        dlg.exec()
 
     def selected_mode(self):
         return self._selected_mode
