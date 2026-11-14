@@ -617,12 +617,15 @@ class HelpDialog(QDialog):
             "You can change the label font size and line width at any "
             "time after lines have been drawn:\n"
             "\u2022  Select a whole group (e.g. \u201cRuler1\u201d) in the "
-            "Layers panel to restyle all rulers inside it at once.\n"
+            "Layers panel, then open the Interactive Ruler dialog and "
+            "move the Label font size or Line width slider \u2013 the "
+            "change is applied immediately to all rulers inside that "
+            "group.\n"
             "\u2022  Select a single ruler layer (e.g. \u201cRuler1 "
-            "2.85 km\u201d) to restyle only that one line.\n"
-            "Then open the Interactive Ruler dialog and move the "
-            "Label font size or Line width slider \u2013 the change is "
-            "applied immediately to every selected layer."
+            "2.85 km\u201d) in the Layers panel, then open the "
+            "Interactive Ruler dialog and move the Label font size or "
+            "Line width slider \u2013 the change is applied immediately "
+            "to that line only."
         )
         restyle_text.setWordWrap(True)
         restyle_text_font = restyle_text.font()
