@@ -1,7 +1,7 @@
 [general]
 name=Interactive-Ruler
 description=Interactive ruler with a launcher dialog, straight-line and multi-point path measurement, a layer-name box that groups measurements as distance-named layers, direction arrows and length labels
-about=Interactive ruler for QGIS. Draw straight lines or multi-point paths on the map and save each measurement as its own styled ruler layer with direction arrows and a length label. Measurements are grouped under a layer name and named after their result (for example SITE C 1.82 km), with automatic metre/kilometre units, a live distance balloon while dragging, adjustable label font size and line width, and three colour themes: Dark, Light and Red (#e31a1c). Existing lines keep their own style and are never recoloured.
+about=Interactive ruler for QGIS. Draw straight lines or multi-point paths on the map and save each measurement as its own styled ruler layer with direction arrows and a length label. Measurements are grouped under a layer name and named after their result (for example SITE A 1.82 km), with automatic metre/kilometre units, a live distance balloon while dragging, adjustable label font size and line width, and three colour themes: Dark, Light and Red (#e31a1c). Existing lines keep their own style and are never recoloured.
 version=1.18
 qgisMinimumVersion=3.0
 author=hafiz m.
