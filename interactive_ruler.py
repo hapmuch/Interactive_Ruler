@@ -82,8 +82,7 @@ UNITS_SETTINGS_KEY = "interactive_ruler/unit_system"
 DEFAULT_LAYER_NAME = "Ruler"
 
 
-# Unit systems the dialog offers; the saved choice applies to new
-# measurements only (existing labels keep the units they were drawn in).
+
 METRIC = "metric"
 IMPERIAL = "imperial"
 UNIT_SYSTEMS = (METRIC, IMPERIAL)
