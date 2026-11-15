@@ -570,7 +570,6 @@ class HelpDialog(QDialog):
         layout.setContentsMargins(16, 14, 16, 12)
         layout.setSpacing(10)
 
-        # --- Ruler style section ---
         style_title = QLabel("<b>1. Ruler style sliders</b>")
         style_title.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(style_title)
@@ -590,7 +589,6 @@ class HelpDialog(QDialog):
         style_text.setFont(style_text_font)
         layout.addWidget(style_text)
 
-        # --- Layer name section ---
         name_title = QLabel("<b>2. Layer name</b>")
         name_title.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(name_title)
@@ -608,7 +606,6 @@ class HelpDialog(QDialog):
         name_text.setFont(name_text_font)
         layout.addWidget(name_text)
 
-        # --- Restyling after drawing section ---
         restyle_title = QLabel("<b>3. Adjusting style after drawing</b>")
         restyle_title.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(restyle_title)
@@ -633,7 +630,6 @@ class HelpDialog(QDialog):
         restyle_text.setFont(restyle_text_font)
         layout.addWidget(restyle_text)
 
-        # --- Close button ---
         btn_row = QHBoxLayout()
         btn_row.addStretch(1)
         close_btn = QPushButton("Close")
