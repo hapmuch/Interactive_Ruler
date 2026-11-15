@@ -15,7 +15,9 @@ layer with direction arrows and a length label.
 - **Layer name box**: measurements are grouped under the name you type
   and every finished line or path becomes its own layer named after its
   result, for example `SITE A 1.82 km`.
-- **Automatic units**: metres below 1 km, kilometres above.
+- **Metric or Imperial units**: a radio in the launcher dialog switches
+  between metres/kilometres and yards/miles. Metric shows metres below
+  1 km, imperial shows yards below 1 mile; the choice is remembered.
 - **Arrow line style** with length labels, created in code so no style
   file is required.
 - **Font size and line width sliders** for new or existing ruler layers.
@@ -52,8 +54,8 @@ Plugins*), or manually from this repository:
 ## Usage
 
 1. Click the ruler toolbar button.
-2. Type a layer name (for example the site name) and choose the measuring
-   mode.
+2. Type a layer name (for example the site name), choose Metric or
+   Imperial units, and choose the measuring mode.
 3. Draw on the map:
    - **I-Ruler**: press, drag and release.
    - **I-Ruler Path**: click each point, then double-click or press Enter
@@ -78,6 +80,7 @@ layer_name=...
 theme=...
 label_font_size=...
 line_width=...
+unit_system=...
 ```
 
 The built-in default layer name is `Ruler`. Remove the section or edit the
@@ -104,8 +107,13 @@ the settings reference and troubleshooting.
 
 ## Version
 
-Current version: **1.19**
+Current version: **1.20**
 
+- **1.20** – Added a **Metric / Imperial** radio to the launcher dialog.
+  Metric keeps the existing metres below 1 km and kilometres above;
+  Imperial shows yards below 1 mile and miles above. The choice is
+  remembered and applies to the cursor balloon, the length label and the
+  layer name of new measurements. Existing lines keep their units.
 - **1.19** – Added a **Help button** (bottom-left of the launcher dialog)
   that opens a small help window explaining the style sliders, the layer
   name field, and how to restyle existing rulers after drawing by selecting

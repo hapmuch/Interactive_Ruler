@@ -10,7 +10,8 @@ Features:
    or path becomes its own layer named after its result
    (SITE C 1.82 km)
 5. Arrow-line style from ruler.qlr with length labels
-6. Auto-switch label m <-> km
+6. Auto-switch label m <-> km, or yd <-> mi when the Metric /
+   Imperial radio in the launcher dialog is set to Imperial
 7. Live distance balloon next to the cursor while dragging
 8. Label font size and line width sliders: with a Ruler layer or
    group selected in the Layers panel they restyle those existing
@@ -76,8 +77,20 @@ LAYER_NAME_SETTINGS_KEY = "interactive_ruler/layer_name"
 THEME_SETTINGS_KEY = "interactive_ruler/theme"
 FONT_SIZE_SETTINGS_KEY = "interactive_ruler/label_font_size"
 LINE_WIDTH_SETTINGS_KEY = "interactive_ruler/line_width"
+UNITS_SETTINGS_KEY = "interactive_ruler/unit_system"
 
 DEFAULT_LAYER_NAME = "Ruler"
+
+
+# Unit systems the dialog offers; the saved choice applies to new
+# measurements only (existing labels keep the units they were drawn in).
+METRIC = "metric"
+IMPERIAL = "imperial"
+UNIT_SYSTEMS = (METRIC, IMPERIAL)
+DEFAULT_UNITS = METRIC
+
+METRES_PER_YARD = 0.9144
+YARDS_PER_MILE = 1760.0
 
 
 RULER_LAYER_PROPERTY = "interactive_ruler_layer"
@@ -156,6 +169,45 @@ def save_settings(theme, font_size, line_width):
     settings.setValue(THEME_SETTINGS_KEY, theme)
     settings.setValue(FONT_SIZE_SETTINGS_KEY, int(font_size))
     settings.setValue(LINE_WIDTH_SETTINGS_KEY, float(line_width))
+
+
+def current_units():
+    """The saved unit system ('metric' or 'imperial')."""
+
+    units = QgsSettings().value(
+        UNITS_SETTINGS_KEY, DEFAULT_UNITS, type=str
+    )
+
+    if units not in UNIT_SYSTEMS:
+        units = DEFAULT_UNITS
+
+    return units
+
+
+def save_units(units):
+    if units not in UNIT_SYSTEMS:
+        units = DEFAULT_UNITS
+
+    QgsSettings().setValue(UNITS_SETTINGS_KEY, units)
+
+
+def format_distance(dist_m, units=DEFAULT_UNITS):
+    """*dist_m* metres as a short string in the chosen unit system.
+
+    Metric shows metres below 1 km and kilometres above; imperial
+    shows yards below 1 mile and miles above, so a measurement picks
+    the same kind of readable unit in both systems.
+    """
+
+    if units == IMPERIAL:
+        yards = dist_m / METRES_PER_YARD
+        if yards >= YARDS_PER_MILE:
+            return "%.2f mi" % (yards / YARDS_PER_MILE)
+        return "%.0f yd" % yards
+
+    if dist_m >= 1000:
+        return "%.2f km" % (dist_m / 1000.0)
+    return "%.0f m" % dist_m
 
 
 def clamp_font_size(font_size):
@@ -630,6 +682,24 @@ class HelpDialog(QDialog):
         restyle_text.setFont(restyle_text_font)
         layout.addWidget(restyle_text)
 
+        units_title = QLabel("<b>4. Metric or imperial units</b>")
+        units_title.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(units_title)
+
+        units_text = QLabel(
+            "Pick Metric or Imperial in the launcher dialog. Metric "
+            "shows metres below 1 km and kilometres above; Imperial "
+            "shows yards below 1 mile and miles above. The choice is "
+            "remembered and applies to the live cursor balloon, the "
+            "length label and the layer name of new measurements. "
+            "Lines drawn earlier keep the units they were drawn in."
+        )
+        units_text.setWordWrap(True)
+        units_text_font = units_text.font()
+        units_text_font.setPointSize(9)
+        units_text.setFont(units_text_font)
+        layout.addWidget(units_text)
+
         btn_row = QHBoxLayout()
         btn_row.addStretch(1)
         close_btn = QPushButton("Close")
@@ -653,6 +723,9 @@ class RulerDialog(QDialog):
 
     The dark / light / red colours are not chosen here: every finished
     line or path asks for its theme in a small popup window.
+
+    The Metric / Imperial choice only affects measurements drawn from
+    now on; labels already saved keep the units they were drawn in.
     """
 
     def __init__(self, layer_name=DEFAULT_LAYER_NAME, parent=None,
@@ -758,6 +831,38 @@ class RulerDialog(QDialog):
         layout.addWidget(style_box)
 
         # -------------------------
+        # UNITS
+        # -------------------------
+        units_box = QGroupBox("Units")
+        units_box.setObjectName("unitsBox")
+
+        units_layout = QHBoxLayout(units_box)
+        units_layout.setSpacing(8)
+
+        self.metric_radio = QRadioButton("Metric (m / km)")
+        self.metric_radio.setObjectName("metricRadio")
+        self.metric_radio.setToolTip(
+            "Metres below 1 km, kilometres above"
+        )
+
+        self.imperial_radio = QRadioButton("Imperial (yd / mi)")
+        self.imperial_radio.setObjectName("imperialRadio")
+        self.imperial_radio.setToolTip(
+            "Yards below 1 mile, miles above"
+        )
+
+        if current_units() == IMPERIAL:
+            self.imperial_radio.setChecked(True)
+        else:
+            self.metric_radio.setChecked(True)
+
+        units_layout.addWidget(self.metric_radio)
+        units_layout.addWidget(self.imperial_radio)
+        units_layout.addStretch(1)
+
+        layout.addWidget(units_box)
+
+        # -------------------------
         # LAYER NAME
         # -------------------------
 
@@ -798,6 +903,9 @@ class RulerDialog(QDialog):
         self.font_slider.valueChanged.connect(self.on_font_changed)
         self.width_slider.valueChanged.connect(self.on_width_changed)
 
+        self.metric_radio.toggled.connect(self.on_units_changed)
+        self.imperial_radio.toggled.connect(self.on_units_changed)
+
         self.update_slider_labels()
         self.straight_button.setFocus()
 
@@ -816,6 +924,23 @@ class RulerDialog(QDialog):
         """The layer name to use for measurements drawn from now on."""
 
         return clean_layer_name(self.name_edit.text())
+
+    def units(self):
+        """The unit system new measurements are saved in."""
+
+        if self.imperial_radio.isChecked():
+            return IMPERIAL
+        return METRIC
+
+    def on_units_changed(self, checked):
+        """Remember the unit choice as soon as a radio is picked.
+
+        Only the radio that just became checked saves, so switching
+        between the two writes the new choice once.
+        """
+
+        if checked:
+            save_units(self.units())
 
     # ---------------------------------------------------------
     # STYLE SETTINGS
@@ -907,6 +1032,7 @@ class InteractiveRulerTool(QgsMapTool):
         self.canvas = iface.mapCanvas()
         self.mode = mode
         self.layer_name = clean_layer_name(layer_name)
+        self.units = current_units()
 
         super().__init__(self.canvas)
 
@@ -1227,9 +1353,7 @@ class InteractiveRulerTool(QgsMapTool):
         return QgsPointXY(point)
 
     def format_length(self, dist_m):
-        if dist_m > 1000:
-            return f"{dist_m / 1000:.2f} km"
-        return f"{dist_m:.0f} m"
+        return format_distance(dist_m, self.units)
 
     def set_status(self, message):
         self.iface.mainWindow().statusBar().showMessage(message)
@@ -1672,6 +1796,7 @@ class InteractiveRulerPlugin:
         if self.tool is not None:
             self.tool.update_style()
             self.tool.layer_name = self.layer_name
+            self.tool.units = dialog.units()
 
         if result != QDialog.DialogCode.Accepted:
             return
