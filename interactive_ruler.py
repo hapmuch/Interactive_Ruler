@@ -21,6 +21,7 @@ Features:
    existing lines are never recolored - redraw to change colours
 10. Refuses to measure and warns when the project has no CRS, instead
     of showing a meaningless length
+11. Snaps ruler points to feature vertices in visible layers (10 px)
 
 Compatible: QGIS 3.x and 4.x (Qt 5 / Qt 6)
 """
@@ -47,7 +48,7 @@ from qgis.PyQt.QtWidgets import (
     QSlider,
     QVBoxLayout,
 )
-from qgis.gui import QgsRubberBand
+from qgis.gui import QgsRubberBand, QgsSnapIndicator
 
 from qgis.core import (
     QgsProject,
@@ -67,6 +68,9 @@ from qgis.core import (
     QgsCoordinateTransform,
     QgsCoordinateReferenceSystem,
     QgsWkbTypes,
+    QgsSnappingConfig,
+    QgsSnappingUtils,
+    QgsPointLocator,
     QgsMarkerLineSymbolLayer,
     QgsMarkerSymbol,
     QgsLineSymbol,
@@ -99,6 +103,8 @@ YARDS_PER_MILE = 1760.0
 
 
 RULER_LAYER_PROPERTY = "interactive_ruler_layer"
+
+SNAP_TOLERANCE_PX = 10
 
 
 LAYER_THEME_KEY = "interactive_ruler/theme"
@@ -139,6 +145,39 @@ THEMES = {
 
 LABEL_TEXT_COLOR = QColor("black")
 LABEL_BACKGROUND_COLOR = QColor(255, 255, 13)
+
+
+# ---------------------------------------------------------
+# SNAP HELPERS
+# ---------------------------------------------------------
+def layer_node_visible(node):
+    """Effective visibility of a layer-tree node, including parents.
+
+    A node's own isVisible() stays True when a parent group is
+    unchecked, so the whole ancestor chain has to be checked.
+    """
+
+    while node is not None:
+        if not node.itemVisibilityChecked():
+            return False
+        node = node.parent()
+    return True
+
+
+class RulerSnapFilter(QgsPointLocator.MatchFilter):
+    """Reject hidden layers and rulers previously drawn by this plugin."""
+
+    def acceptMatch(self, match):
+        layer = match.layer()
+        if layer is None:
+            return False
+
+        if layer.customProperty(RULER_LAYER_PROPERTY, False):
+            return False
+
+        root = QgsProject.instance().layerTreeRoot()
+        node = root.findLayer(layer.id())
+        return node is not None and layer_node_visible(node)
 
 
 # ---------------------------------------------------------
@@ -1093,6 +1132,22 @@ class InteractiveRulerTool(QgsMapTool):
 
         self.tooltip = None
 
+        # Tool-owned snapping: independent of the project snapping
+        # settings, and using the no-canvas constructor so the same
+        # code works on QGIS 3 (Qt 5) and QGIS 4 (Qt 6).
+        self.snapper = QgsSnappingUtils()
+        config = QgsSnappingConfig()
+        config.setEnabled(True)
+        config.setMode(Qgis.SnappingMode.AllLayers)
+        config.setTypeFlag(Qgis.SnappingType.Vertex)
+        config.setUnits(Qgis.MapToolUnit.Pixels)
+        config.setTolerance(SNAP_TOLERANCE_PX)
+        self.snapper.setConfig(config)
+        self.snapper.setMapSettings(self.canvas.mapSettings())
+
+        self.snap_filter = RulerSnapFilter()
+        self.snap_indicator = QgsSnapIndicator(self.canvas)
+
     # ---------------------------------------------------------
     # PROJECT CRS CHECK
     # ---------------------------------------------------------
@@ -1164,6 +1219,36 @@ class InteractiveRulerTool(QgsMapTool):
             )
 
         return "Drag to measure a straight line"
+
+    # ---------------------------------------------------------
+    # AUTO SNAP
+    # ---------------------------------------------------------
+    def clear_snap_indicator(self):
+        self.snap_indicator.setMatch(QgsPointLocator.Match())
+
+    def snapped_point(self, event):
+        """Map point under the cursor, snapped to a visible vertex.
+
+        The filter rejects hidden layers and this plugin's own ruler
+        layers. Without a match the raw cursor position is used.
+        """
+
+        canvas_pos = event.pos()
+
+        try:
+            # Map settings change with extent / CRS; this assignment
+            # does not rebuild the layer locators.
+            self.snapper.setMapSettings(self.canvas.mapSettings())
+            match = self.snapper.snapToMap(canvas_pos, self.snap_filter)
+        except Exception:
+            match = QgsPointLocator.Match()
+
+        self.snap_indicator.setMatch(match)
+
+        if match.isValid():
+            return QgsPointXY(match.point())
+
+        return self.toMapCoordinates(canvas_pos)
 
     def distance_label(self, dist_m):
         return "Length: %s" % self.format_length(dist_m)
@@ -1485,6 +1570,7 @@ class InteractiveRulerTool(QgsMapTool):
         self.start_point = None
         self.path_points = []
         self.hide_tooltip()
+        self.clear_snap_indicator()
         self.reset_rubber_band()
         self.set_status(self.status_hint())
 
@@ -1562,19 +1648,20 @@ class InteractiveRulerTool(QgsMapTool):
 
         if not self.canvas_crs_available():
             self.warn_missing_crs()
+            self.clear_snap_indicator()
             return
 
         if event.button() == Qt.MouseButton.LeftButton:
 
             if self.mode == "path":
                 self.add_path_point(
-                    self.toMapCoordinates(event.pos()), event.pos()
+                    self.snapped_point(event), event.pos()
                 )
                 return
 
             self.ensure_layer_crs()
 
-            self.start_point = self.toMapCoordinates(event.pos())
+            self.start_point = self.snapped_point(event)
 
 
             self.reset_rubber_band()
@@ -1594,22 +1681,25 @@ class InteractiveRulerTool(QgsMapTool):
 
         if not self.canvas_crs_available():
             self.hide_tooltip()
+            self.clear_snap_indicator()
             return
 
         if self.mode == "path":
             if self.path_points:
                 self.update_path_preview(
-                    self.toMapCoordinates(event.pos()), event.pos()
+                    self.snapped_point(event), event.pos()
                 )
             else:
+                self.snapped_point(event)
                 self.hide_tooltip()
             return
 
         if not self.start_point:
+            self.snapped_point(event)
             self.hide_tooltip()
             return
 
-        end_point = self.toMapCoordinates(event.pos())
+        end_point = self.snapped_point(event)
 
         start_layer = self.to_layer_point(self.start_point)
         end_layer = self.to_layer_point(end_point)
@@ -1640,6 +1730,7 @@ class InteractiveRulerTool(QgsMapTool):
 
         if not self.canvas_crs_available():
             self.hide_tooltip()
+            self.clear_snap_indicator()
             return
 
         if self.mode == "path":
@@ -1653,7 +1744,7 @@ class InteractiveRulerTool(QgsMapTool):
         if not self.start_point:
             return
 
-        end_point = self.toMapCoordinates(event.pos())
+        end_point = self.snapped_point(event)
 
         start_layer = self.to_layer_point(self.start_point)
         end_layer = self.to_layer_point(end_point)

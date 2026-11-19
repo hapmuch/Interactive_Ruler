@@ -28,6 +28,10 @@ layer with direction arrows and a length label.
   and line width.
 - **No-CRS warning**: the plugin refuses to measure until the project has
   a CRS, instead of reporting a meaningless length.
+- **Automatic vertex snapping**: ruler points snap to the nearest feature
+  vertex in a visible layer within 10 screen pixels. Hidden layers and
+  rulers drawn by the plugin are ignored; there is no extra setting,
+  balloon text or change to saved layer names.
 
 ## Requirements
 
@@ -62,6 +66,9 @@ Plugins*), or manually from this repository:
    - **I-Ruler**: press, drag and release.
    - **I-Ruler Path**: click each point, then double-click or press Enter
      to finish.
+   - Ruler points snap automatically to nearby feature vertices in
+     visible layers. The QGIS snap marker shows the target; if no vertex
+     is close enough, the point stays exactly where you clicked.
 4. Pick the theme for the finished line in the popup. The last choice is
    pre-selected, so pressing Enter accepts it.
 5. The measurement is saved in its own layer with a length label.
@@ -109,8 +116,14 @@ the settings reference and troubleshooting.
 
 ## Version
 
-Current version: **1.21**
+Current version: **1.22**
 
+- **1.22** – Added **automatic snapping to feature vertices** in visible
+  layers within a fixed 10 px screen tolerance. It is always on, applies
+  to straight-line end points and every path point, and ignores hidden
+  layers and rulers previously drawn by the plugin. No new dialog
+  control, balloon text or saved-layer naming was added. The code uses
+  QGIS 3/4 and Qt 5/6 compatible APIs.
 - **1.21** – Declared QGIS 4 compatibility (`qgisMaximumVersion=4.99`), so
   the plugin is offered for both QGIS 3.x and QGIS 4.x. Qt enums are scoped,
   the `QAction` import works with Qt 5 and Qt 6, and label line-placement
