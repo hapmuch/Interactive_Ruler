@@ -1,6 +1,6 @@
 # Interactive Ruler for QGIS
 
-An interactive measuring tool for QGIS 3.x. Draw a straight line or a
+An interactive measuring tool for QGIS 3.x and 4.x. Draw a straight line or a
 multi-point path on the map, and the plugin saves it as a styled ruler
 layer with direction arrows and a length label.
 
@@ -31,7 +31,9 @@ layer with direction arrows and a length label.
 
 ## Requirements
 
-- QGIS 3.0 or newer.
+- QGIS 3.0 or newer, including QGIS 4.x. The plugin declares
+  `qgisMaximumVersion=4.99` so it is listed as QGIS 4 ready; the code uses
+  `qgis.PyQt` and Qt 5 / Qt 6 compatible scoped enums.
 
 ## Installation
 
@@ -107,8 +109,13 @@ the settings reference and troubleshooting.
 
 ## Version
 
-Current version: **1.20**
+Current version: **1.21**
 
+- **1.21** – Declared QGIS 4 compatibility (`qgisMaximumVersion=4.99`), so
+  the plugin is offered for both QGIS 3.x and QGIS 4.x. Qt enums are scoped,
+  the `QAction` import works with Qt 5 and Qt 6, and label line-placement
+  flags use the API of the running QGIS version. No changes to measuring
+  behaviour.
 - **1.20** – Added a **Metric / Imperial** radio to the launcher dialog.
   Metric keeps the existing metres below 1 km and kilometres above;
   Imperial shows yards below 1 mile and miles above. The choice is

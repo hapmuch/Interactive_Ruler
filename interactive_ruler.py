@@ -22,15 +22,21 @@ Features:
 10. Refuses to measure and warns when the project has no CRS, instead
     of showing a meaningless length
 
-Compatible: QGIS 3.x
+Compatible: QGIS 3.x and 4.x (Qt 5 / Qt 6)
 """
 
 import math
 
 from qgis.PyQt.QtCore import Qt, QDate, QSizeF, QEvent, QVariant
 from qgis.PyQt.QtGui import QColor, QFont, QIcon
+
+try:
+    from qgis.PyQt.QtWidgets import QAction  # Qt 5 / QGIS 3
+except ImportError:
+    # Qt 6 / QGIS 4 moved QAction from QtWidgets to QtGui.
+    from qgis.PyQt.QtGui import QAction
+
 from qgis.PyQt.QtWidgets import (
-    QAction,
     QDialog,
     QGroupBox,
     QHBoxLayout,
@@ -397,10 +403,28 @@ def apply_ruler_style(layer, theme, font_size, line_width):
 
 
     settings.placement = QgsPalLayerSettings.Placement.Horizontal
-    settings.placementFlags = (
-        QgsPalLayerSettings.LinePlacementFlags.AboveLine |
-        QgsPalLayerSettings.LinePlacementFlags.MapOrientation
-    )
+
+    # QGIS 4 moved the line placement flags out of QgsPalLayerSettings:
+    # the flags enum is now Qgis.LabelLinePlacementFlag and the values are
+    # set through QgsLabelLineSettings.  Older QGIS 3 uses the nested enum
+    # and the placementFlags attribute.
+    try:
+        placement_flags = (
+            Qgis.LabelLinePlacementFlag.AboveLine |
+            Qgis.LabelLinePlacementFlag.MapOrientation
+        )
+    except AttributeError:
+        placement_flags = (
+            QgsPalLayerSettings.LinePlacementFlags.AboveLine |
+            QgsPalLayerSettings.LinePlacementFlags.MapOrientation
+        )
+    if hasattr(settings, "lineSettings"):
+        line_settings = settings.lineSettings()
+        line_settings.setPlacementFlags(placement_flags)
+        settings.setLineSettings(line_settings)
+    else:
+        settings.placementFlags = placement_flags
+
     settings.dist = 0.0
     settings.distUnits = QgsUnitTypes.RenderUnit.RenderMillimeters
     settings.priority = 5
