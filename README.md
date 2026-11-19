@@ -118,14 +118,11 @@ Current version: **1.22**
 - **1.22** – Added **automatic snapping to feature vertices** in visible
   layers within a fixed 10 px screen tolerance. It is always on, applies
   to straight-line end points and every path point, and ignores hidden
-  layers and rulers previously drawn by the plugin. No new dialog
-  control, balloon text or saved-layer naming was added. The code uses
-  QGIS 3/4 and Qt 5/6 compatible APIs.
+  layers and rulers previously drawn by the plugin.
 - **1.21** – Declared QGIS 4 compatibility (`qgisMaximumVersion=4.99`), so
   the plugin is offered for both QGIS 3.x and QGIS 4.x. Qt enums are scoped,
   the `QAction` import works with Qt 5 and Qt 6, and label line-placement
-  flags use the API of the running QGIS version. No changes to measuring
-  behaviour.
+  flags use the API of the running QGIS version.
 - **1.20** – Added a **Metric / Imperial** radio to the launcher dialog.
   Metric keeps the existing metres below 1 km and kilometres above;
   Imperial shows yards below 1 mile and miles above. The choice is
