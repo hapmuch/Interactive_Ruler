@@ -23,15 +23,12 @@ layer with direction arrows and a length label.
 - **Font size and line width sliders** for new or existing ruler layers.
 - **Three colour themes** chosen in a small popup after each finished
   measurement: Dark (black), Light (white) and Red (`#e31a1c`).
-- **Always-red drag preview**, visible on both light and dark basemaps.
 - **Per-layer styling**: each saved ruler keeps its own theme, font size
   and line width.
 - **No-CRS warning**: the plugin refuses to measure until the project has
   a CRS, instead of reporting a meaningless length.
 - **Automatic vertex snapping**: ruler points snap to the nearest feature
-  vertex in a visible layer within 10 screen pixels. Hidden layers and
-  rulers drawn by the plugin are ignored; there is no extra setting,
-  balloon text or change to saved layer names.
+  vertex in a visible layer within 10 screen pixels.
 
 ## Requirements
 
