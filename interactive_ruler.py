@@ -34,7 +34,7 @@ from qgis.PyQt.QtGui import QColor, QFont, QIcon
 try:
     from qgis.PyQt.QtWidgets import QAction  # Qt 5 / QGIS 3
 except ImportError:
-    # Qt 6 / QGIS 4 moved QAction from QtWidgets to QtGui.
+    
     from qgis.PyQt.QtGui import QAction
 
 from qgis.PyQt.QtWidgets import (
@@ -443,10 +443,7 @@ def apply_ruler_style(layer, theme, font_size, line_width):
 
     settings.placement = QgsPalLayerSettings.Placement.Horizontal
 
-    # QGIS 4 moved the line placement flags out of QgsPalLayerSettings:
-    # the flags enum is now Qgis.LabelLinePlacementFlag and the values are
-    # set through QgsLabelLineSettings.  Older QGIS 3 uses the nested enum
-    # and the placementFlags attribute.
+
     try:
         placement_flags = (
             Qgis.LabelLinePlacementFlag.AboveLine |
@@ -1132,9 +1129,6 @@ class InteractiveRulerTool(QgsMapTool):
 
         self.tooltip = None
 
-        # Tool-owned snapping: independent of the project snapping
-        # settings, and using the no-canvas constructor so the same
-        # code works on QGIS 3 (Qt 5) and QGIS 4 (Qt 6).
         self.snapper = QgsSnappingUtils()
         config = QgsSnappingConfig()
         config.setEnabled(True)
@@ -1236,8 +1230,6 @@ class InteractiveRulerTool(QgsMapTool):
         canvas_pos = event.pos()
 
         try:
-            # Map settings change with extent / CRS; this assignment
-            # does not rebuild the layer locators.
             self.snapper.setMapSettings(self.canvas.mapSettings())
             match = self.snapper.snapToMap(canvas_pos, self.snap_filter)
         except Exception:
@@ -1787,17 +1779,6 @@ class InteractiveRulerTool(QgsMapTool):
         super().deactivate()
 
     def remove_empty_scratch_layer(self):
-        """Remove the pending layer and now-empty groups around it.
-
-        Activating the tool creates a pending layer at once (the
-        CRS must be known before the first click). When the tool is
-        switched off before anything was measured, that layer - and
-        its group, when now empty - is dropped again.
-
-        The layer may already be gone (removed in the Layers panel,
-        project closed): the id is tracked, so the cleanup never
-        touches a deleted C++ object.
-        """
 
         layer_id = self.layer_id
         self.layer = None
