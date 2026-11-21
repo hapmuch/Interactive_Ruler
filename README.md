@@ -22,7 +22,7 @@ layer with direction arrows and a length label.
   file is required.
 - **Font size and line width sliders** for new or existing ruler layers.
 - **Three colour themes** chosen in a small popup after each finished
-  measurement: Dark (black), Light (white) and Red (`#e31a1c`).
+  measurement: Dark (black), Light (white) and Red.
 - **Per-layer styling**: each saved ruler keeps its own theme, font size
   and line width.
 - **No-CRS warning**: the plugin refuses to measure until the project has
