@@ -20,6 +20,10 @@ layer with direction arrows and a length label.
   1 km, imperial shows yards below 1 mile; the choice is remembered.
 - **Arrow line style** with length labels, created in code so no style
   file is required.
+- **Optional bearing on straight lines**: the **Show bearing** checkbox
+  at the right of the Units box adds the forward bearing below the length,
+  with one decimal, for example `(50.0°)`. It starts checked and is
+  remembered. Path measurements keep the length-only label.
 - **Font size and line width sliders** for new or existing ruler layers.
 - **Three colour themes** chosen in a small popup after each finished
   measurement: Dark (black), Light (white) and Red.
@@ -113,8 +117,15 @@ the settings reference and troubleshooting.
 
 ## Version
 
-Current version: **1.22**
+Current version: **1.23**
 
+- **1.23** – Added an optional bearing line under the length in saved
+  straight-line labels, with one decimal and a real degree symbol,
+  for example `10 km` / `(50.0°)`. The **Show bearing** checkbox at the
+  right of the Units box controls it, starts checked and is remembered.
+  When unchecked, straight lines keep the one-line label. Path
+  measurements and existing layers are unchanged. No balloon, layer-name,
+  theme or snapping change. The bundled PDF manual remains version 1.22.
 - **1.22** – Added **automatic snapping to feature vertices** in visible
   layers within a fixed 10 px screen tolerance. It is always on, applies
   to straight-line end points and every path point, and ignores hidden

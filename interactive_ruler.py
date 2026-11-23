@@ -38,6 +38,7 @@ except ImportError:
     from qgis.PyQt.QtGui import QAction
 
 from qgis.PyQt.QtWidgets import (
+    QCheckBox,
     QDialog,
     QGroupBox,
     QHBoxLayout,
@@ -88,8 +89,10 @@ THEME_SETTINGS_KEY = "interactive_ruler/theme"
 FONT_SIZE_SETTINGS_KEY = "interactive_ruler/label_font_size"
 LINE_WIDTH_SETTINGS_KEY = "interactive_ruler/line_width"
 UNITS_SETTINGS_KEY = "interactive_ruler/unit_system"
+SHOW_BEARING_SETTINGS_KEY = "interactive_ruler/show_bearing"
 
 DEFAULT_LAYER_NAME = "Ruler"
+DEFAULT_SHOW_BEARING = True
 
 
 
@@ -105,6 +108,18 @@ YARDS_PER_MILE = 1760.0
 RULER_LAYER_PROPERTY = "interactive_ruler_layer"
 
 SNAP_TOLERANCE_PX = 10
+
+# Saved straight-line label: length on the first line, bearing on the
+# second, for example "10 km" / "(50.0°)". The field is NULL on path
+# layers, on lines drawn with Show bearing unchecked, and on layers
+# saved by earlier versions, so they keep the one-line label.
+# char(10) is the line break; the degree sign is U+00B0 in the normal
+# label font, never the Symbol font.
+BEARING_LABEL_EXPRESSION = (
+    "coalesce(\"Length\", '') || "
+    "if(\"Bearing\" IS NULL, '', "
+    "char(10) || '(' || format_number(\"Bearing\", 1) || '\u00b0)')"
+)
 
 
 LAYER_THEME_KEY = "interactive_ruler/theme"
@@ -233,6 +248,18 @@ def save_units(units):
         units = DEFAULT_UNITS
 
     QgsSettings().setValue(UNITS_SETTINGS_KEY, units)
+
+
+def current_show_bearing():
+    """Whether new straight-line labels should include the bearing."""
+
+    return QgsSettings().value(
+        SHOW_BEARING_SETTINGS_KEY, DEFAULT_SHOW_BEARING, type=bool
+    )
+
+
+def save_show_bearing(show):
+    QgsSettings().setValue(SHOW_BEARING_SETTINGS_KEY, bool(show))
 
 
 def format_distance(dist_m, units=DEFAULT_UNITS):
@@ -437,8 +464,8 @@ def apply_ruler_style(layer, theme, font_size, line_width):
     settings = QgsPalLayerSettings()
 
     settings.enabled = True
-    settings.fieldName = "Length"
-    settings.isExpression = False
+    settings.fieldName = BEARING_LABEL_EXPRESSION
+    settings.isExpression = True
 
 
     settings.placement = QgsPalLayerSettings.Placement.Horizontal
@@ -741,7 +768,7 @@ class HelpDialog(QDialog):
         restyle_text.setFont(restyle_text_font)
         layout.addWidget(restyle_text)
 
-        units_title = QLabel("<b>4. Metric or imperial units</b>")
+        units_title = QLabel("<b>4. Units and bearing</b>")
         units_title.setTextFormat(Qt.TextFormat.RichText)
         layout.addWidget(units_title)
 
@@ -751,7 +778,12 @@ class HelpDialog(QDialog):
             "shows yards below 1 mile and miles above. The choice is "
             "remembered and applies to the live cursor balloon, the "
             "length label and the layer name of new measurements. "
-            "Lines drawn earlier keep the units they were drawn in."
+            "Lines drawn earlier keep the units they were drawn in.\n\n"
+            "Use Show bearing on the right of the Units box to add the "
+            "forward bearing below the length on new straight-line "
+            "labels, for example (50.0\\u00b0). It is remembered between "
+            "sessions. Path measurements stay length-only, and labels "
+            "already saved are never changed."
         )
         units_text.setWordWrap(True)
         units_text_font = units_text.font()
@@ -785,6 +817,10 @@ class RulerDialog(QDialog):
 
     The Metric / Imperial choice only affects measurements drawn from
     now on; labels already saved keep the units they were drawn in.
+
+    The Show bearing checkbox controls whether new straight-line
+    labels include the bearing line. The choice is remembered and
+    never changes labels already saved.
     """
 
     def __init__(self, layer_name=DEFAULT_LAYER_NAME, parent=None,
@@ -919,6 +955,16 @@ class RulerDialog(QDialog):
         units_layout.addWidget(self.imperial_radio)
         units_layout.addStretch(1)
 
+        # Right side of the Units row, after the radio buttons.
+        self.show_bearing_check = QCheckBox("Show bearing")
+        self.show_bearing_check.setObjectName("showBearingCheck")
+        self.show_bearing_check.setToolTip(
+            "Add the forward bearing below the length on new "
+            "straight-line labels"
+        )
+        self.show_bearing_check.setChecked(current_show_bearing())
+        units_layout.addWidget(self.show_bearing_check)
+
         layout.addWidget(units_box)
 
         # -------------------------
@@ -964,6 +1010,9 @@ class RulerDialog(QDialog):
 
         self.metric_radio.toggled.connect(self.on_units_changed)
         self.imperial_radio.toggled.connect(self.on_units_changed)
+        self.show_bearing_check.toggled.connect(
+            self.on_show_bearing_changed
+        )
 
         self.update_slider_labels()
         self.straight_button.setFocus()
@@ -1000,6 +1049,16 @@ class RulerDialog(QDialog):
 
         if checked:
             save_units(self.units())
+
+    def show_bearing(self):
+        """Whether new straight-line labels should include bearing."""
+
+        return self.show_bearing_check.isChecked()
+
+    def on_show_bearing_changed(self, checked):
+        """Remember the bearing-label choice as soon as it changes."""
+
+        save_show_bearing(checked)
 
     # ---------------------------------------------------------
     # STYLE SETTINGS
@@ -1092,6 +1151,7 @@ class InteractiveRulerTool(QgsMapTool):
         self.mode = mode
         self.layer_name = clean_layer_name(layer_name)
         self.units = current_units()
+        self.show_bearing = current_show_bearing()
 
         super().__init__(self.canvas)
 
@@ -1245,7 +1305,9 @@ class InteractiveRulerTool(QgsMapTool):
     def distance_label(self, dist_m):
         return "Length: %s" % self.format_length(dist_m)
 
-    def azimuth_label(self, start_point, end_point):
+    def azimuth_value(self, start_point, end_point):
+        """Forward bearing in degrees, clockwise from north."""
+
         if hasattr(self.distance, "bearing"):
 
             azimuth = math.degrees(
@@ -1257,7 +1319,12 @@ class InteractiveRulerTool(QgsMapTool):
             dy = end_point.y() - start_point.y()
             azimuth = math.degrees(math.atan2(dx, dy)) % 360.0
 
-        return "Bearing: %.1f\u00b0" % azimuth
+        return azimuth
+
+    def azimuth_label(self, start_point, end_point):
+        return "Bearing: %.1f\u00b0" % self.azimuth_value(
+            start_point, end_point
+        )
 
     # ---------------------------------------------------------
     # CREATE GROUP + SCRATCH LAYER
@@ -1336,9 +1403,15 @@ class InteractiveRulerTool(QgsMapTool):
 
         pr = layer.dataProvider()
 
-        pr.addAttributes([
-            QgsField("Length", QVariant.String)
-        ])
+        fields = [QgsField("Length", QVariant.String)]
+
+        # Path layers and lines drawn with Show bearing unchecked keep
+        # the one-line label. Only opted-in straight measurements store
+        # the bearing used by the two-line label.
+        if self.mode != "path" and self.show_bearing:
+            fields.append(QgsField("Bearing", QVariant.Double))
+
+        pr.addAttributes(fields)
 
         layer.updateFields()
 
@@ -1538,6 +1611,16 @@ class InteractiveRulerTool(QgsMapTool):
             "%s %s" % (self.layer_name, self.format_length(dist_m))
         ))
 
+        # The checkbox can be toggled while a tool is already active.
+        # Add the field late if that tool's pending layer was made with
+        # bearing switched off.
+        if self.mode != "path" and self.show_bearing:
+            if self.layer.fields().indexOf("Bearing") < 0:
+                self.layer.dataProvider().addAttributes([
+                    QgsField("Bearing", QVariant.Double)
+                ])
+                self.layer.updateFields()
+
         feat = QgsFeature(self.layer.fields())
 
         feat.setGeometry(
@@ -1545,6 +1628,11 @@ class InteractiveRulerTool(QgsMapTool):
         )
 
         feat["Length"] = self.format_length(dist_m)
+
+        if self.mode != "path" and self.show_bearing:
+            feat["Bearing"] = self.azimuth_value(
+                layer_points[0], layer_points[-1]
+            )
 
         self.layer.dataProvider().addFeature(feat)
 
@@ -1892,6 +1980,7 @@ class InteractiveRulerPlugin:
             self.tool.update_style()
             self.tool.layer_name = self.layer_name
             self.tool.units = dialog.units()
+            self.tool.show_bearing = dialog.show_bearing()
 
         if result != QDialog.DialogCode.Accepted:
             return
